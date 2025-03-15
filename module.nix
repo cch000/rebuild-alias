@@ -1,6 +1,7 @@
 {
   hosts,
   configPath,
+  subCommands,
   pkgs,
   lib,
   ...
@@ -10,6 +11,17 @@
     mkOption
     types
     concatMap
+    strings
+    ;
+
+  inherit
+    (strings)
+    optionalString
+    ;
+
+  inherit
+    (builtins)
+    elem
     ;
 in {
   options.evalModule = mkOption {
@@ -19,20 +31,34 @@ in {
   config.evalModule = let
     inherit hosts;
 
-    types = ["switch" "boot"];
+    types =
+      if subCommands == []
+      then [
+        "switch"
+        "boot"
+        "test"
+        "build"
+        "dry-build"
+        "dry-activate"
+        "build-vm"
+        "build-vm-with-bootloader"
+      ]
+      else subCommands;
+
+    requireSudo = ["switch" "boot"];
 
     mkCommand = host: type: {
       name =
-        if host == "LOCAL"
+        if host == "LOCALHOST"
         then "local-${type}"
         else "${host}-${type}";
       command =
-        if host == "LOCAL"
-        then "nixos-rebuild ${type} --use-remote-sudo --flake ${configPath}"
-        else "nixos-rebuild ${type} --target-host ${host} --use-remote-sudo --flake ${configPath}";
+        "nixos-rebuild ${type} --flake ${configPath}"
+        + (optionalString (host != "LOCALHOST") " --target-host ${host}")
+        + (optionalString (elem type requireSudo) " --use-remote-sudo");
     };
 
-    localCommands = map (type: mkCommand "LOCAL" type) types;
+    localCommands = map (type: mkCommand "LOCALHOST" type) types;
 
     remoteCommands = concatMap (host: map (type: mkCommand host type) types) hosts;
 
