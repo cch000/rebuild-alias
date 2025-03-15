@@ -10,6 +10,7 @@
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
     eval = {
+      subCommands ? [],
       self,
       configPath,
     }:
@@ -18,7 +19,7 @@
           ./module.nix
         ];
         specialArgs = {
-          inherit pkgs configPath;
+          inherit pkgs configPath subCommands;
           hosts = builtins.attrNames self.nixosConfigurations;
         };
       };
