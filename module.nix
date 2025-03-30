@@ -38,9 +38,7 @@ in {
   config.evalModule = let
     hosts = attrNames (
       args.self.nixosConfigurations
-      or (
-        throw "`self` is a required argument for rebuild-alias"
-      )
+      or (throw "`self` is a required argument for rebuild-alias")
     );
     configPath =
       args.configPath
@@ -48,10 +46,12 @@ in {
 
     subCommands = let
       validateSubCommands = subCommands:
-        map (subCommand:
-          if !(elem subCommand default)
-          then throw "Invalid subcommand: `${subCommand}` passed as an argument"
-          else subCommand)
+        map (
+          subCommand:
+            if !(elem subCommand default)
+            then throw "Invalid subcommand: `${subCommand}` passed as an argument"
+            else subCommand
+        )
         subCommands;
 
       default = [
