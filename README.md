@@ -26,17 +26,20 @@ First, we instantiate rebuild-alias by adding it to our flake.
     };
   };
   
-  outputs = {nixpkgs, self, rebuild-alias}: {};
+  outputs = {nixpkgs, self, rebuild-alias}: {
+    # Imagine the contents
+  };
 }
 
 ```
 
 Now that rebuild-alias is in scope, we evaluate its `lib` attribute.
-Then, we change `configPath` to point to our NixOS flake.
-To target systems other than `x86_64-linux`, we can also pass as argument
-our local's flake `pkgs`.
-Finally, the only thing left to do is adding the aliases to our `devsSells` 
+
+Finally, the only thing left to do is adding the aliases to our `devsShells` 
 or `systemPackages`.
+
+> [!NOTE]
+> To target systems other than `x86_64-linux`, we can also pass as an argument our local's flake `pkgs`. 
 
 
 ```nix
@@ -56,9 +59,9 @@ or `systemPackages`.
       inherit self;
       # Optional, default: pkgs for x86_64-linux
       inherit pkgs;
-      # Change to your nixos config path
+      # Optional, default: current directory
       configPath = "~/dotfiles";
-      # subcommands to generate aliases for, default: all
+      # Optional, subcommands to generate aliases for, default: all
       subCommands = ["boot" "switch" "build"];
     };
   
