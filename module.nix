@@ -1,7 +1,5 @@
 {
-  hosts,
-  configPath,
-  subCommands,
+  args,
   pkgs,
   lib,
   ...
@@ -13,27 +11,50 @@
     concatMap
     strings
     ;
-
   inherit
     (strings)
     optionalString
     ;
-
   inherit
     (builtins)
     elem
+    attrNames
+    ;
+  inherit
+    (pkgs)
+    writeShellScriptBin
+    symlinkJoin
+    ;
+  inherit
+    (types)
+    package
     ;
 in {
   options.evalModule = mkOption {
-    type = with types; package;
+    type = package;
     readOnly = true;
   };
-  config.evalModule = let
-    inherit hosts;
 
-    types =
-      if subCommands == []
-      then [
+  config.evalModule = let
+    hosts = attrNames (
+      args.self.nixosConfigurations
+      or (
+        throw "`self` is a required argument for rebuild-alias"
+      )
+    );
+    configPath =
+      args.configPath
+      or ".#";
+
+    subCommands = let
+      validateSubCommands = subCommands:
+        map (subCommand:
+          if !(elem subCommand default)
+          then throw "Invalid subcommand: `${subCommand}` passed as an argument"
+          else subCommand)
+        subCommands;
+
+      default = [
         "switch"
         "boot"
         "test"
@@ -42,31 +63,37 @@ in {
         "dry-activate"
         "build-vm"
         "build-vm-with-bootloader"
-      ]
-      else subCommands;
+      ];
+    in
+      if !(args ? subCommands)
+      then default
+      else validateSubCommands args.subCommands;
 
     requireSudo = ["switch" "boot"];
 
-    mkCommand = host: type: {
-      name =
-        if host == "LOCALHOST"
-        then "local-${type}"
-        else "${host}-${type}";
-      command =
-        "nixos-rebuild ${type} --flake ${configPath}"
-        + (optionalString (host != "LOCALHOST") " --target-host ${host}")
-        + (optionalString (elem type requireSudo) " --use-remote-sudo");
-    };
+    genCommands = host: let
+      mkCommand = host: subCommand: {
+        name =
+          if host == "LOCALHOST"
+          then "local-${subCommand}"
+          else "${host}-${subCommand}";
+        command =
+          "nixos-rebuild ${subCommand} --flake ${configPath}"
+          + (optionalString (host != "LOCALHOST") " --target-host ${host}")
+          + (optionalString (elem subCommand requireSudo) " --use-remote-sudo");
+      };
+    in
+      map (subCommand: mkCommand host subCommand) subCommands;
 
-    localCommands = map (type: mkCommand "LOCALHOST" type) types;
+    localCommands = genCommands "LOCALHOST";
 
-    remoteCommands = concatMap (host: map (type: mkCommand host type) types) hosts;
+    remoteCommands = concatMap (host: genCommands host) hosts;
 
     commands = localCommands ++ remoteCommands;
 
-    paths = map (x: pkgs.writeShellScriptBin x.name x.command) commands;
+    paths = map (x: writeShellScriptBin x.name x.command) commands;
   in
-    pkgs.symlinkJoin {
+    symlinkJoin {
       name = "rebuild-alias";
       inherit paths;
     };
