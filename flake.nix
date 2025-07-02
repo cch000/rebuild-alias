@@ -12,6 +12,7 @@
 
     eval = {
       pkgs ? localpkgs,
+      command ? null,
       subCommands ? null,
       self ? null,
       configPath ? null,

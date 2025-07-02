@@ -40,9 +40,9 @@ in {
       args.self.nixosConfigurations
       or (throw "`self` is a required argument for rebuild-alias")
     );
-    configPath =
-      args.configPath
-      or ".#";
+    configPath = args.configPath or ".#";
+
+    command = args.command or "nixos-rebuild";
 
     subCommands = let
       validateSubCommands = subCommands:
@@ -78,9 +78,9 @@ in {
           then "local-${subCommand}"
           else "${host}-${subCommand}";
         command =
-          "nixos-rebuild ${subCommand} --flake ${configPath}"
+          "${command} ${subCommand} --flake ${configPath}"
           + (optionalString (host != "LOCALHOST") " --target-host ${host}")
-          + (optionalString (elem subCommand requireSudo) " --use-remote-sudo");
+          + (optionalString (elem subCommand requireSudo) " --sudo --ask-sudo-password");
       };
     in
       map (subCommand: mkCommand host subCommand) subCommands;
