@@ -40,7 +40,7 @@ in {
       args.self.nixosConfigurations
       or (throw "`self` is a required argument for rebuild-alias")
     );
-    configPath = args.configPath or ".#";
+    configPath = args.configPath or ".";
 
     command = args.command or "nixos-rebuild";
 
@@ -78,7 +78,8 @@ in {
           then "local-${subCommand}"
           else "${host}-${subCommand}";
         command =
-          "${command} ${subCommand} --flake ${configPath}"
+          "${command} ${subCommand} --flake ${configPath}#"
+          + (optionalString (host != "LOCALHOST") host)
           + (optionalString (host != "LOCALHOST") " --target-host ${host}")
           + (optionalString (elem subCommand requireSudo) " --sudo --ask-sudo-password");
       };
