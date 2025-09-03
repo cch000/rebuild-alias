@@ -19,6 +19,7 @@
     (builtins)
     elem
     attrNames
+    filter
     ;
   inherit
     (pkgs)
@@ -36,10 +37,12 @@ in {
   };
 
   config.evalModule = let
-    hosts = attrNames (
+
+    hosts = filter (x: !elem x (args.blacklist or [])) (attrNames (
       args.self.nixosConfigurations
       or (throw "`self` is a required argument for rebuild-alias")
-    );
+    ));
+
     configPath = args.configPath or ".";
 
     command = args.command or "nixos-rebuild";

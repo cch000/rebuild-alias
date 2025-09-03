@@ -16,6 +16,7 @@
       subCommands ? null,
       self ? null,
       configPath ? null,
+      blacklist ? null,
       #deal with "null" values in module.nix
     } @ args:
       nixpkgs.lib.evalModules {

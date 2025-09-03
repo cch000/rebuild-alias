@@ -63,6 +63,8 @@ or `systemPackages`.
       configPath = "~/dotfiles";
       # Optional, subcommands to generate aliases for, default: all
       subCommands = ["boot" "switch" "build"];
+      # Optional, hosts to avoid generating aliases for, default: none
+      blacklist = ["athena"];
     };
   
   in {
